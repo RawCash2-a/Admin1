@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Investoship Admin Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics.js"></script>
+</head>
+<body>
+  <!-- Login Section -->
+  <div id="login-page" class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-4 shadow-lg" style="width: 300px;">
+      <h4 class="card-title text-center">Admin Login</h4>
+      <div class="card-body">
+        <form id="login-form">
+          <div class="mb-3">
+            <label for="email" class="form-label">Email address:</label>
+            <input type="email" class="form-control" id="email" placeholder="Admin Email" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password:</label>
+            <input type="password" class="form-control" id="password" placeholder="Password" required>
+          </div>
+          <div id="login-error" class="text-danger mb-2" style="display:none;"></div>
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="admin-page" style="display:none;">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Investoship Admin</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav"
+                aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <button class="btn btn-outline-light" id="logout-btn">Logout</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar navigation -->
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+          <div class="position-sticky pt-3">
+            <ul class="nav flex-column">
+              <li class="nav-item mb-2"><a class="nav-link active" href="#" onclick="showSection('dashboard')">Dashboard</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('users')">User Management</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('transactions')">Transactions</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('referrals')">Referrals & Bonuses</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('plans')">Investment Plans</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('notifications')">Notifications</a></li>
+              <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showSection('settings')">Settings</a></li>
+              <li class="nav-item mb-2"><a class="nav-link text-danger" href="#" onclick="showSection('security')">Security Logs</a></li>
+            </ul>
+          </div>
+        </nav>
+
+        <!-- Main content area -->
+        <main class="col-md-10 ms-sm-auto px-4">
+          <!-- Dashboard Section -->
+          <section id="dashboard" class="pt-4">
+            <h2>Analytics Dashboard</h2>
+            <div class="row">
+              <!-- Real-time statistics cards -->
+              <div class="col-sm-6 col-lg-3 mb-3">
+                <div class="card text-white bg-primary">
+                  <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p id="totalUsers" class="card-text">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3 mb-3">
+                <div class="card text-white bg-success">
+                  <div class="card-body">
+                    <h5 class="card-title">Active Users</h5>
+                    <p id="activeUsers" class="card-text">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3 mb-3">
+                <div class="card text-white bg-info">
+                  <div class="card-body">
+                    <h5 class="card-title">Total Deposits</h5>
+                    <p id="totalDeposits" class="card-text">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3 mb-3">
+                <div class="card text-white bg-warning">
+                  <div class="card-body">
+                    <h5 class="card-title">Total Withdrawals</h5>
+                    <p id="totalWithdrawals" class="card-text">0</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- User Management Section -->
+          <section id="users" class="pt-4" style="display:none;">
+            <h2>User Management</h2>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="user-table">
+                <!-- Filled dynamically -->
+              </tbody>
+            </table>
+          </section>
+
+          <!-- Transactions Section -->
+          <section id="transactions" class="pt-4" style="display:none;">
+            <h2>Transactions</h2>
+            <!-- Tabs for different transaction types -->
+            <ul class="nav nav-tabs">
+              <li class="nav-item">
+                <button class="nav-link active" id="deposits-tab" onclick="showTransactionTab('deposits')">Deposits</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="withdrawals-tab" onclick="showTransactionTab('withdrawals')">Withdrawals</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="transfers-tab" onclick="showTransactionTab('transfers')">Transfers</button>
+              </li>
+            </ul>
+            <div id="deposits" class="transaction-tab-content">
+              <h4 class="mt-3">Deposit Transactions</h4>
+              <table class="table table-sm">
+                <thead>
+                  <tr><th>User</th><th>Amount</th><th>Date</th><th>Status</th></tr>
+                </thead>
+                <tbody id="deposits-table"></tbody>
+              </table>
+            </div>
+            <div id="withdrawals" class="transaction-tab-content" style="display:none;">
+              <h4 class="mt-3">Withdrawal Requests</h4>
+              <table class="table table-sm">
+                <thead>
+                  <tr><th>User</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="withdrawals-table"></tbody>
+              </table>
+            </div>
+            <div id="transfers" class="transaction-tab-content" style="display:none;">
+              <h4 class="mt-3">Transfers</h4>
+              <table class="table table-sm">
+                <thead>
+                  <tr><th>From</th><th>To</th><th>Amount</th><th>Date</th></tr>
+                </thead>
+                <tbody id="transfers-table"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Referrals & Bonuses Section -->
+          <section id="referrals" class="pt-4" style="display:none;">
+            <h2>Referrals & Bonuses</h2>
+            <!-- Statistics -->
+            <p id="referralStats">Loading referral stats...</p>
+            <!-- Bonus controls -->
+            <div class="mb-3">
+              <label for="bonusInput" class="form-label">Referral Bonus (%)</label>
+              <input type="number" class="form-control" id="bonusInput" min="0" step="1">
+              <button id="saveBonusBtn" class="btn btn-primary mt-2">Save Bonus Setting</button>
+            </div>
+          </section>
+
+          <!-- Investment Plans Section -->
+          <section id="plans" class="pt-4" style="display:none;">
+            <h2>Investment Plans</h2>
+            <button class="btn btn-success mb-3" onclick="showAddPlanModal()">Add New Plan</button>
+            <table class="table table-bordered">
+              <thead>
+                <tr><th>Name</th><th>Duration (days)</th><th>Percent</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="plans-table"></tbody>
+            </table>
+          </section>
+
+          <!-- Notifications Section -->
+          <section id="notifications" class="pt-4" style="display:none;">
+            <h2>Broadcast Notification</h2>
+            <div class="mb-3">
+              <label for="notificationInput" class="form-label">Message</label>
+              <textarea class="form-control" id="notificationInput" rows="3"></textarea>
+              <button class="btn btn-primary mt-2" id="sendNotificationBtn">Send</button>
+            </div>
+          </section>
+
+          <!-- Settings Section -->
+          <section id="settings" class="pt-4" style="display:none;">
+            <h2>Settings</h2>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="toggleWithdrawals">
+              <label class="form-check-label" for="toggleWithdrawals">Enable Withdrawals</label>
+            </div>
+          </section>
+
+          <!-- Security Logs Section -->
+          <section id="security" class="pt-4" style="display:none;">
+            <h2>Security Logs</h2>
+            <table class="table table-sm">
+              <thead>
+                <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Status</th></tr>
+              </thead>
+              <tbody id="security-table"></tbody>
+            </table>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Firebase and App Scripts -->
+  <script type="module">
+    // Firebase configuration and initialization
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.7.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, onSnapshot, doc, updateDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics.js";
+
+    // Initialize Firebase with provided config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpqEgGiRoZO_Hb4IXt_YuTV9WQLmwHBZM",
+      authDomain: "investoship.firebaseapp.com",
+      projectId: "investoship",
+      storageBucket: "investoship.firebasestorage.app",
+      messagingSenderId: "264495950069",
+      appId: "1:264495950069:web:dbda7567da9cb3f0b4bdbc",
+      measurementId: "G-K57NCKQ51D"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+    const analytics = getAnalytics(app);
+
+    const adminEmail = "israeldewa1@gmail.com";
+    const adminPassword = "qwerty";
+
+    // Elements
+    const loginPage = document.getElementById('login-page');
+    const adminPage = document.getElementById('admin-page');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // On auth state changed, check if admin is signed in
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (user.email === adminEmail) {
+          // Show admin dashboard
+          loginPage.style.display = 'none';
+          adminPage.style.display = 'block';
+          initializeDashboard(); // load data
+        } else {
+          // If not admin, sign out and show error
+          signOut(auth);
+          loginError.textContent = "Access denied: Not an admin";
+          loginError.style.display = 'block';
+        }
+      } else {
+        // No user is signed in, show login page
+        loginPage.style.display = 'flex';
+        adminPage.style.display = 'none';
+      }
+    });
+
+    // Handle login form submission
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = loginForm.email.value;
+      const password = loginForm.password.value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then((credential) => {
+          // Record login attempt success
+          addDoc(collection(db, 'securityLogs'), {
+            user: email,
+            action: 'login',
+            status: 'success',
+            timestamp: new Date().toISOString()
+          });
+        })
+        .catch((error) => {
+          loginError.textContent = error.message;
+          loginError.style.display = 'block';
+          // Record login attempt failure
+          addDoc(collection(db, 'securityLogs'), {
+            user: loginForm.email.value,
+            action: 'login',
+            status: 'failure',
+            message: error.message,
+            timestamp: new Date().toISOString()
+          });
+        });
+    });
+
+    // Logout handler
+    logoutBtn.onclick = () => {
+      signOut(auth);
+    };
+
+    // Show only the selected section, hide others
+    function showSection(section) {
+      const sections = ['dashboard','users','transactions','referrals','plans','notifications','settings','security'];
+      sections.forEach(sec => {
+        document.getElementById(sec).style.display = (sec === section) ? 'block' : 'none';
+      });
+      // Reset active class on sidebar links
+      document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+        link.classList.toggle('active', link.textContent.trim().toLowerCase().startsWith(section));
+      });
+    }
+
+    // Show transaction sub-tab
+    function showTransactionTab(type) {
+      ['deposits','withdrawals','transfers'].forEach(tab => {
+        document.getElementById(tab).style.display = (tab === type) ? 'block' : 'none';
+        document.getElementById(tab + '-tab').classList.toggle('active', tab === type);
+      });
+    }
+
+    // Initialize dashboard data and listeners
+    async function initializeDashboard() {
+      // Real-time stats for total/active users
+      const usersCol = collection(db, 'users');
+      onSnapshot(usersCol, snapshot => {
+        let total = 0, active = 0;
+        snapshot.forEach(doc => {
+          total++;
+          if (doc.data().active) active++;
+        });
+        document.getElementById('totalUsers').textContent = total;
+        document.getElementById('activeUsers').textContent = active;
+      });
+
+      // Real-time counts for deposits/withdrawals and populate tables
+      const depositsCol = collection(db, 'deposits');
+      onSnapshot(depositsCol, snapshot => {
+        let sum = 0;
+        const depositsTable = document.getElementById('deposits-table');
+        depositsTable.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          sum += data.amount;
+          const row = `<tr><td>${data.userEmail}</td><td>${data.amount}</td><td>${data.date}</td><td>${data.status}</td></tr>`;
+          depositsTable.innerHTML += row;
+        });
+        document.getElementById('totalDeposits').textContent = sum;
+      });
+
+      const withdrawalsCol = collection(db, 'withdrawals');
+      onSnapshot(withdrawalsCol, snapshot => {
+        let sum = 0;
+        const table = document.getElementById('withdrawals-table');
+        table.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          sum += data.amount;
+          const approveBtn = `<button class="btn btn-sm btn-success" onclick="processWithdrawal('${doc.id}','approve')">Approve</button>`;
+          const rejectBtn = `<button class="btn btn-sm btn-danger" onclick="processWithdrawal('${doc.id}','reject')">Reject</button>`;
+          const row = `<tr><td>${data.userEmail}</td><td>${data.amount}</td><td>${data.date}</td><td>${data.status}</td><td>${approveBtn} ${rejectBtn}</td></tr>`;
+          table.innerHTML += row;
+        });
+        document.getElementById('totalWithdrawals').textContent = sum;
+      });
+
+      const transfersCol = collection(db, 'transfers');
+      onSnapshot(transfersCol, snapshot => {
+        const table = document.getElementById('transfers-table');
+        table.innerHTML = '';
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const row = `<tr><td>${d.fromEmail}</td><td>${d.toEmail}</td><td>${d.amount}</td><td>${d.date}</td></tr>`;
+          table.innerHTML += row;
+        });
+      });
+
+      // Load user list
+      getDocs(usersCol).then(snapshot => {
+        const userTable = document.getElementById('user-table');
+        userTable.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const uid = doc.id;
+          const statusText = data.active ? 'Active' : 'Inactive';
+          const activateBtn = `<button class="btn btn-sm btn-success" onclick="activateUser('${uid}')">Activate</button>`;
+          const deactivateBtn = `<button class="btn btn-sm btn-warning" onclick="deactivateUser('${uid}')">Deactivate</button>`;
+          const resetBtn = `<button class="btn btn-sm btn-info" onclick="resetUser('${data.email}')">Reset Password</button>`;
+          const row = `<tr><td>${data.email}</td><td>${data.name||''}</td><td>${statusText}</td><td>${activateBtn} ${deactivateBtn} ${resetBtn}</td></tr>`;
+          userTable.innerHTML += row;
+        });
+      });
+
+      // Load investment plans
+      const plansCol = collection(db, 'plans');
+      getDocs(plansCol).then(snapshot => {
+        const plansTable = document.getElementById('plans-table');
+        plansTable.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const pid = doc.id;
+          const editBtn = `<button class="btn btn-sm btn-primary" onclick="editPlan('${pid}','${data.name}',${data.duration},${data.percent})">Edit</button>`;
+          const deleteBtn = `<button class="btn btn-sm btn-danger" onclick="deletePlan('${pid}')">Delete</button>`;
+          const row = `<tr><td>${data.name}</td><td>${data.duration}</td><td>${data.percent}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+          plansTable.innerHTML += row;
+        });
+      });
+
+      // Load referral stats and bonus settings
+      onSnapshot(usersCol, snapshot => {
+        let totalReferrals = 0;
+        snapshot.forEach(doc => {
+          totalReferrals += (doc.data().referrals || 0);
+        });
+        document.getElementById('referralStats').textContent = `Total Referrals by Users: ${totalReferrals}`;
+      });
+      // Referral bonus percentage setting
+      const referralSettingDoc = doc(db, 'settings', 'referral');
+      onSnapshot(referralSettingDoc, docSnap => {
+        if (docSnap.exists()) {
+          document.getElementById('bonusInput').value = docSnap.data().percent;
+        }
+      });
+
+      // Load withdrawal toggle setting
+      const toggleDoc = doc(db, 'settings', 'withdrawals');
+      onSnapshot(toggleDoc, docSnap => {
+        if (docSnap.exists()) {
+          document.getElementById('toggleWithdrawals').checked = docSnap.data().enabled;
+        }
+      });
+
+      // Security logs
+      const logsCol = collection(db, 'securityLogs');
+      onSnapshot(logsCol, snapshot => {
+        const secTable = document.getElementById('security-table');
+        secTable.innerHTML = '';
+        snapshot.forEach(doc => {
+          const log = doc.data();
+          const row = `<tr><td>${new Date(log.timestamp).toLocaleString()}</td><td>${log.user}</td><td>${log.action}</td><td>${log.status}</td></tr>`;
+          secTable.innerHTML += row;
+        });
+      });
+    }
+
+    // Activate user: set active=true
+    async function activateUser(uid) {
+      const userDoc = doc(db, 'users', uid);
+      await updateDoc(userDoc, {active: true});
+    }
+
+    // Deactivate user: set active=false
+    async function deactivateUser(uid) {
+      const userDoc = doc(db, 'users', uid);
+      await updateDoc(userDoc, {active: false});
+    }
+
+    // Send password reset email to user
+    function resetUser(email) {
+      sendPasswordResetEmail(auth, email)
+        .then(() => alert('Password reset email sent to ' + email))
+        .catch(err => alert('Error sending reset email: ' + err.message));
+    }
+
+    // Process withdrawal: approve or reject
+    async function processWithdrawal(id, action) {
+      const wDoc = doc(db, 'withdrawals', id);
+      await updateDoc(wDoc, {status: action === 'approve' ? 'Approved' : 'Rejected'});
+    }
+
+    // Edit investment plan
+    function editPlan(id, name, duration, percent) {
+      const newName = prompt('Plan Name:', name);
+      const newDuration = parseInt(prompt('Duration (days):', duration));
+      const newPercent = parseFloat(prompt('Percent (%):', percent));
+      if (newName && newDuration && newPercent) {
+        const planDoc = doc(db, 'plans', id);
+        updateDoc(planDoc, {name: newName, duration: newDuration, percent: newPercent});
+      }
+    }
+
+    // Delete investment plan
+    async function deletePlan(id) {
+      if (confirm('Delete this plan?')) {
+        await deleteDoc(doc(db, 'plans', id));
+      }
+    }
+
+    // Show modal to add new plan (simple prompts for this example)
+    function showAddPlanModal() {
+      const name = prompt('Plan Name:');
+      const dur = parseInt(prompt('Duration (days):'));
+      const pct = parseFloat(prompt('Percent (%):'));
+      if (name && dur && pct) {
+        addDoc(collection(db, 'plans'), {name: name, duration: dur, percent: pct});
+      }
+    }
+
+    // Save referral bonus percentage
+    document.getElementById('saveBonusBtn').onclick = async () => {
+      const val = parseFloat(document.getElementById('bonusInput').value);
+      await updateDoc(doc(db, 'settings', 'referral'), {percent: val});
+    };
+
+    // Send broadcast notification
+    document.getElementById('sendNotificationBtn').onclick = async () => {
+      const msg = document.getElementById('notificationInput').value.trim();
+      if (msg) {
+        await addDoc(collection(db, 'notifications'), {
+          message: msg,
+          timestamp: new Date().toISOString()
+        });
+        alert('Notification sent.');
+      }
+    };
+
+    // Toggle withdrawals enabled/disabled
+    document.getElementById('toggleWithdrawals').onchange = async (e) => {
+      await updateDoc(doc(db, 'settings', 'withdrawals'), {enabled: e.target.checked});
+    };
+  </script>
+</body>
+</html>
